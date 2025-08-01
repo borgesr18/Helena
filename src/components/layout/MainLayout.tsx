@@ -37,7 +37,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     <div className="bg-helena-light min-h-screen">
       <Header />
       <Sidebar />
-      <main className="pt-25 ml-64 p-6 bg-helena-light min-h-screen">
+      <main className="pt-20 ml-64 p-6 bg-helena-light min-h-screen">
         {children}
       </main>
     </div>
