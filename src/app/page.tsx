@@ -1,7 +1,7 @@
 'use client'
 
 import { MainLayout } from '@/components/layout/MainLayout'
-import { Mic, FileText, PenTool, CheckCircle, Users, Clock, Lightbulb, Brain, Loader2 } from 'lucide-react'
+import { Mic, FileText, PenTool, CheckCircle, Users, Clock, Lightbulb, Brain, Loader2, Save } from 'lucide-react'
 import { useState, useEffect, useCallback } from 'react'
 import { useWakeWord } from '@/hooks/useWakeWord'
 import { useVoiceCommand } from '@/hooks/useVoiceCommand'
@@ -14,6 +14,9 @@ export default function Home() {
   const [isProcessingAI, setIsProcessingAI] = useState(false)
   const [prescricaoData, setPrescricaoData] = useState<PrescricaoData | null>(null)
   const [aiError, setAiError] = useState<string | null>(null)
+  const [isSavingPrescription, setIsSavingPrescription] = useState(false)
+  const [savedPrescriptionId, setSavedPrescriptionId] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const handleVoiceCommandResult = useCallback((transcript: string) => {
     console.log('Voice command captured:', transcript)
@@ -111,6 +114,41 @@ export default function Home() {
     }
   }, [voiceCommand])
 
+  const handleSavePrescription = useCallback(async () => {
+    if (!prescricaoData) {
+      setSaveError('Nenhuma prescrição para salvar')
+      return
+    }
+
+    setIsSavingPrescription(true)
+    setSaveError(null)
+    setSavedPrescriptionId(null)
+
+    try {
+      const response = await fetch('/api/prescricoes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(prescricaoData)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Erro ao salvar prescrição')
+      }
+
+      const savedPrescricao = await response.json()
+      setSavedPrescriptionId(savedPrescricao.id)
+      setTranscriptionText(`Prescrição salva com sucesso!`)
+    } catch (error) {
+      console.error('Erro ao salvar prescrição:', error)
+      setSaveError(error instanceof Error ? error.message : 'Erro desconhecido ao salvar prescrição')
+    } finally {
+      setIsSavingPrescription(false)
+    }
+  }, [prescricaoData])
+
   useEffect(() => {
     if (isCommandListening && commandTranscript) {
       setTranscriptionText(`Capturando comando: ${commandTranscript}`)
@@ -162,6 +200,12 @@ export default function Home() {
               </div>
             </div>
           </div>
+
+          {saveError && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+              <p className="text-red-600 text-sm">{saveError}</p>
+            </div>
+          )}
 
           {(prescricaoData || aiError) && (
             <div className={`rounded-xl p-6 mb-8 ${aiError ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
@@ -243,6 +287,21 @@ export default function Home() {
                   <Brain size={16} />
                 )}
                 <span>{isProcessingAI ? 'Processando...' : 'Preencher com IA'}</span>
+              </button>
+            )}
+
+            {prescricaoData && !savedPrescriptionId && (
+              <button 
+                onClick={handleSavePrescription}
+                disabled={isSavingPrescription}
+                className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-sm disabled:cursor-not-allowed"
+              >
+                {isSavingPrescription ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Save size={16} />
+                )}
+                <span>{isSavingPrescription ? 'Salvando...' : 'Salvar Prescrição'}</span>
               </button>
             )}
             
