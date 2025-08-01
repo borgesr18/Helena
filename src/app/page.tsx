@@ -1,28 +1,86 @@
 'use client'
 
 import { MainLayout } from '@/components/layout/MainLayout'
-import { Mic, Printer, FileText, PenTool, CheckCircle, Users, Clock, Lightbulb } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { Mic, FileText, PenTool, CheckCircle, Users, Clock, Lightbulb } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { useWakeWord } from '@/hooks/useWakeWord'
+import { useVoiceCommand } from '@/hooks/useVoiceCommand'
 
 export default function Home() {
-  const [transcriptionText, setTranscriptionText] = useState('Aguardando comando de voz...')
+  const [isAssistantActive, setIsAssistantActive] = useState(false)
+  const [transcriptionText, setTranscriptionText] = useState('Aguardando ativação da assistente...')
+  const [voiceCommand, setVoiceCommand] = useState('')
+
+  const handleVoiceCommandResult = useCallback((transcript: string) => {
+    console.log('Voice command captured:', transcript)
+    setVoiceCommand(transcript)
+    setTranscriptionText(`Comando capturado: ${transcript}`)
+  }, [])
+
+  const {
+    isListening: isCommandListening,
+    isSupported: isCommandSupported,
+    transcript: commandTranscript,
+    error: commandError,
+    startListening: startVoiceCommand,
+    stopListening: stopVoiceCommand,
+    clearTranscript
+  } = useVoiceCommand({
+    language: 'pt-BR',
+    timeout: 10000,
+    onResult: handleVoiceCommandResult,
+    onError: (error) => console.error('Voice command error:', error)
+  })
+
+  const handleWakeWordDetected = useCallback(() => {
+    console.log('Wake word "Helena" detected!')
+    startVoiceCommand()
+  }, [startVoiceCommand])
+
+  const {
+    isListening: isWakeWordListening,
+    isSupported: isWakeWordSupported,
+    error: wakeWordError,
+    startListening: startWakeWord,
+    stopListening: stopWakeWord
+  } = useWakeWord({
+    wakeWord: 'helena',
+    onWake: handleWakeWordDetected,
+    continuous: true,
+    language: 'pt-BR'
+  })
+
+  const handleActivateAssistant = useCallback(async () => {
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true })
+      setIsAssistantActive(true)
+      setTranscriptionText('Helena está ouvindo por "Helena"...')
+      startWakeWord()
+    } catch (error) {
+      console.error('Microphone permission denied:', error)
+      setTranscriptionText('Erro: Permissão do microfone negada')
+    }
+  }, [startWakeWord])
+
+  const handleDeactivateAssistant = useCallback(() => {
+    setIsAssistantActive(false)
+    setTranscriptionText('Assistente desativada')
+    stopWakeWord()
+    stopVoiceCommand()
+    clearTranscript()
+  }, [stopWakeWord, stopVoiceCommand, clearTranscript])
 
   useEffect(() => {
-    const examples = [
-      'Aguardando comando de voz...',
-      'Helena, prescreva para Maria Santos...',
-      'Helena, prescreva para João Silva: Dipirona 500mg...',
-      'Helena, gere receita para Ana Costa: Amoxicilina 500mg, 1 cápsula de 8 em 8 horas por 7 dias'
-    ]
-
-    let currentIndex = 0
-    const interval = setInterval(() => {
-      setTranscriptionText(examples[currentIndex])
-      currentIndex = (currentIndex + 1) % examples.length
-    }, 4000)
-
-    return () => clearInterval(interval)
-  }, [])
+    if (isCommandListening && commandTranscript) {
+      setTranscriptionText(`Capturando comando: ${commandTranscript}`)
+    } else if (isWakeWordListening) {
+      setTranscriptionText('Helena está ouvindo por "Helena"...')
+    } else if (wakeWordError || commandError) {
+      setTranscriptionText(`Erro: ${wakeWordError || commandError}`)
+    } else if (voiceCommand) {
+      setTranscriptionText(`Último comando: ${voiceCommand}`)
+    }
+  }, [isCommandListening, commandTranscript, isWakeWordListening, wakeWordError, commandError, voiceCommand])
 
   return (
     <MainLayout>
@@ -30,10 +88,16 @@ export default function Home() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-helena-blue bg-opacity-10 rounded-full mb-4">
-              <Mic className="text-helena-blue text-2xl pulse-animation" size={32} />
+              <Mic className={`text-helena-blue text-2xl ${(isWakeWordListening || isCommandListening) ? 'pulse-animation' : ''}`} size={32} />
             </div>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">🎤 Helena está ouvindo...</h2>
-            <p className="text-helena-gray">Diga seu comando para gerar uma prescrição automaticamente</p>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+              {isCommandListening ? '🎤 Capturando comando...' : 
+               isWakeWordListening ? '🎤 Helena está ouvindo...' : 
+               '🎤 Assistente Helena'}
+            </h2>
+            <p className="text-helena-gray">
+              {isAssistantActive ? 'Diga "Helena" seguido do seu comando' : 'Clique em "Ativar Assistente" para começar'}
+            </p>
           </div>
 
           <div className="bg-helena-light rounded-xl p-6 mb-6">
@@ -59,10 +123,24 @@ export default function Home() {
           </div>
 
           <div className="flex flex-wrap gap-4 justify-center">
-            <button className="flex items-center space-x-2 bg-helena-blue hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-sm">
-              <Printer size={16} />
-              <span>Imprimir</span>
-            </button>
+            {!isAssistantActive ? (
+              <button 
+                onClick={handleActivateAssistant}
+                disabled={!isWakeWordSupported || !isCommandSupported}
+                className="flex items-center space-x-2 bg-helena-blue hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Mic size={16} />
+                <span>Ativar Assistente</span>
+              </button>
+            ) : (
+              <button 
+                onClick={handleDeactivateAssistant}
+                className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-sm"
+              >
+                <Mic size={16} />
+                <span>Desativar Assistente</span>
+              </button>
+            )}
             
             <button className="flex items-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-sm">
               <FileText size={16} />
