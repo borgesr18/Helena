@@ -1,11 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { MainLayout } from '@/components/layout/MainLayout'
-import { Plus, Search, Edit, Trash2 } from 'lucide-react'
-import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/contexts/AuthContext'
+import React, { useState, useEffect } from 'react';
+import { MainLayout } from '@/components/layout/MainLayout';
+import { Plus, Search, Edit, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Patient = {
   id: string
@@ -30,13 +29,11 @@ export default function PacientesPage() {
 
   const fetchPatients = async () => {
     try {
-      const { data, error } = await supabase
-        .from('pacientes')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      setPatients(data || [])
+      const response = await fetch('/api/pacientes')
+      if (!response.ok) throw new Error('Erro ao buscar pacientes')
+      
+      const data = await response.json()
+      setPatients(data)
     } catch (error) {
       console.error('Error fetching patients:', error)
     } finally {

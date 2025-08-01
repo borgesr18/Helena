@@ -1,8 +1,8 @@
-'use client'
+'use client';
 
-import React from 'react'
-import { MainLayout } from '@/components/layout/MainLayout'
-import { PenTool } from 'lucide-react'
+import React from 'react';
+import { MainLayout } from '@/components/layout/MainLayout';
+import { PenTool } from 'lucide-react';
 
 export default function AssinaturasPage() {
   return (
@@ -30,5 +30,5 @@ export default function AssinaturasPage() {
         </div>
       </div>
     </MainLayout>
-  )
+  );
 }

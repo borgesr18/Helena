@@ -1,28 +1,165 @@
 'use client'
 
 import { MainLayout } from '@/components/layout/MainLayout'
-import { Mic, Printer, FileText, PenTool, CheckCircle, Users, Clock, Lightbulb } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { Mic, FileText, PenTool, CheckCircle, Users, Clock, Lightbulb, Brain, Loader2, Save } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { useWakeWord } from '@/hooks/useWakeWord'
+import { useVoiceCommand } from '@/hooks/useVoiceCommand'
+import { PrescricaoData } from '@/types/prescription'
 
 export default function Home() {
-  const [transcriptionText, setTranscriptionText] = useState('Aguardando comando de voz...')
+  const [isAssistantActive, setIsAssistantActive] = useState(false)
+  const [transcriptionText, setTranscriptionText] = useState('Aguardando ativação da assistente...')
+  const [voiceCommand, setVoiceCommand] = useState('')
+  const [isProcessingAI, setIsProcessingAI] = useState(false)
+  const [prescricaoData, setPrescricaoData] = useState<PrescricaoData | null>(null)
+  const [aiError, setAiError] = useState<string | null>(null)
+  const [isSavingPrescription, setIsSavingPrescription] = useState(false)
+  const [savedPrescriptionId, setSavedPrescriptionId] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  const handleVoiceCommandResult = useCallback((transcript: string) => {
+    console.log('Voice command captured:', transcript)
+    setVoiceCommand(transcript)
+    setTranscriptionText(`Comando capturado: ${transcript}`)
+  }, [])
+
+  const {
+    isListening: isCommandListening,
+    isSupported: isCommandSupported,
+    transcript: commandTranscript,
+    error: commandError,
+    startListening: startVoiceCommand,
+    stopListening: stopVoiceCommand,
+    clearTranscript
+  } = useVoiceCommand({
+    language: 'pt-BR',
+    timeout: 10000,
+    onResult: handleVoiceCommandResult,
+    onError: (error) => console.error('Voice command error:', error)
+  })
+
+  const handleWakeWordDetected = useCallback(() => {
+    console.log('Wake word "Helena" detected!')
+    startVoiceCommand()
+  }, [startVoiceCommand])
+
+  const {
+    isListening: isWakeWordListening,
+    isSupported: isWakeWordSupported,
+    error: wakeWordError,
+    startListening: startWakeWord,
+    stopListening: stopWakeWord
+  } = useWakeWord({
+    wakeWord: 'helena',
+    onWake: handleWakeWordDetected,
+    continuous: true,
+    language: 'pt-BR'
+  })
+
+  const handleActivateAssistant = useCallback(async () => {
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true })
+      setIsAssistantActive(true)
+      setTranscriptionText('Helena está ouvindo por "Helena"...')
+      startWakeWord()
+    } catch (error) {
+      console.error('Microphone permission denied:', error)
+      setTranscriptionText('Erro: Permissão do microfone negada')
+    }
+  }, [startWakeWord])
+
+  const handleDeactivateAssistant = useCallback(() => {
+    setIsAssistantActive(false)
+    setTranscriptionText('Assistente desativada')
+    stopWakeWord()
+    stopVoiceCommand()
+    clearTranscript()
+  }, [stopWakeWord, stopVoiceCommand, clearTranscript])
+
+  const handleProcessWithAI = useCallback(async () => {
+    if (!voiceCommand.trim()) {
+      setAiError('Nenhum comando de voz disponível para processar')
+      return
+    }
+
+    setIsProcessingAI(true)
+    setAiError(null)
+    setPrescricaoData(null)
+
+    try {
+      const response = await fetch('/api/openai/prescricao', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          transcricao: voiceCommand
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Erro ao processar comando com IA')
+      }
+
+      const data: PrescricaoData = await response.json()
+      setPrescricaoData(data)
+      setTranscriptionText(`IA processou: ${voiceCommand}`)
+    } catch (error) {
+      console.error('Erro ao processar com IA:', error)
+      setAiError(error instanceof Error ? error.message : 'Erro desconhecido ao processar comando')
+    } finally {
+      setIsProcessingAI(false)
+    }
+  }, [voiceCommand])
+
+  const handleSavePrescription = useCallback(async () => {
+    if (!prescricaoData) {
+      setSaveError('Nenhuma prescrição para salvar')
+      return
+    }
+
+    setIsSavingPrescription(true)
+    setSaveError(null)
+    setSavedPrescriptionId(null)
+
+    try {
+      const response = await fetch('/api/prescricoes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(prescricaoData)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Erro ao salvar prescrição')
+      }
+
+      const savedPrescricao = await response.json()
+      setSavedPrescriptionId(savedPrescricao.id)
+      setTranscriptionText(`Prescrição salva com sucesso!`)
+    } catch (error) {
+      console.error('Erro ao salvar prescrição:', error)
+      setSaveError(error instanceof Error ? error.message : 'Erro desconhecido ao salvar prescrição')
+    } finally {
+      setIsSavingPrescription(false)
+    }
+  }, [prescricaoData])
 
   useEffect(() => {
-    const examples = [
-      'Aguardando comando de voz...',
-      'Helena, prescreva para Maria Santos...',
-      'Helena, prescreva para João Silva: Dipirona 500mg...',
-      'Helena, gere receita para Ana Costa: Amoxicilina 500mg, 1 cápsula de 8 em 8 horas por 7 dias'
-    ]
-
-    let currentIndex = 0
-    const interval = setInterval(() => {
-      setTranscriptionText(examples[currentIndex])
-      currentIndex = (currentIndex + 1) % examples.length
-    }, 4000)
-
-    return () => clearInterval(interval)
-  }, [])
+    if (isCommandListening && commandTranscript) {
+      setTranscriptionText(`Capturando comando: ${commandTranscript}`)
+    } else if (isWakeWordListening) {
+      setTranscriptionText('Helena está ouvindo por "Helena"...')
+    } else if (wakeWordError || commandError) {
+      setTranscriptionText(`Erro: ${wakeWordError || commandError}`)
+    } else if (voiceCommand) {
+      setTranscriptionText(`Último comando: ${voiceCommand}`)
+    }
+  }, [isCommandListening, commandTranscript, isWakeWordListening, wakeWordError, commandError, voiceCommand])
 
   return (
     <MainLayout>
@@ -30,10 +167,16 @@ export default function Home() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-helena-blue bg-opacity-10 rounded-full mb-4">
-              <Mic className="text-helena-blue text-2xl pulse-animation" size={32} />
+              <Mic className={`text-helena-blue text-2xl ${(isWakeWordListening || isCommandListening) ? 'pulse-animation' : ''}`} size={32} />
             </div>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">🎤 Helena está ouvindo...</h2>
-            <p className="text-helena-gray">Diga seu comando para gerar uma prescrição automaticamente</p>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+              {isCommandListening ? '🎤 Capturando comando...' : 
+               isWakeWordListening ? '🎤 Helena está ouvindo...' : 
+               '🎤 Assistente Helena'}
+            </h2>
+            <p className="text-helena-gray">
+              {isAssistantActive ? 'Diga "Helena" seguido do seu comando' : 'Clique em "Ativar Assistente" para começar'}
+            </p>
           </div>
 
           <div className="bg-helena-light rounded-xl p-6 mb-6">
@@ -58,11 +201,109 @@ export default function Home() {
             </div>
           </div>
 
+          {saveError && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+              <p className="text-red-600 text-sm">{saveError}</p>
+            </div>
+          )}
+
+          {(prescricaoData || aiError) && (
+            <div className={`rounded-xl p-6 mb-8 ${aiError ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+              <div className="flex items-start space-x-3">
+                {aiError ? (
+                  <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center mt-1">
+                    <span className="text-red-600 text-sm">✕</span>
+                  </div>
+                ) : (
+                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-1">
+                    <span className="text-green-600 text-sm">✓</span>
+                  </div>
+                )}
+                <div className="flex-1">
+                  {aiError ? (
+                    <>
+                      <p className="text-sm font-medium text-red-800 mb-1">Erro no processamento da IA:</p>
+                      <p className="text-sm text-red-700">{aiError}</p>
+                    </>
+                  ) : prescricaoData ? (
+                    <>
+                      <p className="text-sm font-medium text-green-800 mb-3">Prescrição estruturada pela IA:</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white rounded-lg p-3 border border-green-200">
+                          <p className="text-xs font-medium text-green-700 mb-1">Paciente:</p>
+                          <p className="text-sm text-gray-800">{prescricaoData.paciente}</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-3 border border-green-200">
+                          <p className="text-xs font-medium text-green-700 mb-1">Medicamento:</p>
+                          <p className="text-sm text-gray-800">{prescricaoData.medicamento}</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-3 border border-green-200 md:col-span-2">
+                          <p className="text-xs font-medium text-green-700 mb-1">Posologia:</p>
+                          <p className="text-sm text-gray-800">{prescricaoData.posologia}</p>
+                        </div>
+                        {prescricaoData.observacoes && (
+                          <div className="bg-white rounded-lg p-3 border border-green-200 md:col-span-2">
+                            <p className="text-xs font-medium text-green-700 mb-1">Observações:</p>
+                            <p className="text-sm text-gray-800">{prescricaoData.observacoes}</p>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-4 justify-center">
-            <button className="flex items-center space-x-2 bg-helena-blue hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-sm">
-              <Printer size={16} />
-              <span>Imprimir</span>
-            </button>
+            {!isAssistantActive ? (
+              <button 
+                onClick={handleActivateAssistant}
+                disabled={!isWakeWordSupported || !isCommandSupported}
+                className="flex items-center space-x-2 bg-helena-blue hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Mic size={16} />
+                <span>Ativar Assistente</span>
+              </button>
+            ) : (
+              <button 
+                onClick={handleDeactivateAssistant}
+                className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-sm"
+              >
+                <Mic size={16} />
+                <span>Desativar Assistente</span>
+              </button>
+            )}
+            
+            {voiceCommand && (
+              <button 
+                onClick={handleProcessWithAI}
+                disabled={isProcessingAI}
+                className="flex items-center space-x-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-sm disabled:cursor-not-allowed"
+              >
+                {isProcessingAI ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Brain size={16} />
+                )}
+                <span>{isProcessingAI ? 'Processando...' : 'Preencher com IA'}</span>
+              </button>
+            )}
+
+            {prescricaoData && !savedPrescriptionId && (
+              <button 
+                onClick={handleSavePrescription}
+                disabled={isSavingPrescription}
+                className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-sm disabled:cursor-not-allowed"
+              >
+                {isSavingPrescription ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Save size={16} />
+                )}
+                <span>{isSavingPrescription ? 'Salvando...' : 'Salvar Prescrição'}</span>
+              </button>
+            )}
             
             <button className="flex items-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-sm">
               <FileText size={16} />

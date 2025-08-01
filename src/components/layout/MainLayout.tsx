@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useEffect } from 'react'
-import { Header } from './Header'
-import { Sidebar } from './Sidebar'
-import { useAuth } from '@/contexts/AuthContext'
-import { useRouter, usePathname } from 'next/navigation'
+import React, { useEffect } from 'react';
+import { Header } from './Header';
+import { Sidebar } from './Sidebar';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter, usePathname } from 'next/navigation';
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -38,7 +38,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     <div className="bg-helena-light min-h-screen">
       <Header />
       <Sidebar />
-      <main className="ml-64 pt-20 p-6">
+      <main className="pt-24 ml-64 p-6 bg-helena-light min-h-screen">
         {children}
       </main>
     </div>
