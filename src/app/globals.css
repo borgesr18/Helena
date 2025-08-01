@@ -10,8 +10,6 @@
   }
 }
 
-
-
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -68,8 +66,6 @@
   }
 }
 
-
-
 @layer base {
   * {
     @apply border-border;
@@ -100,4 +96,82 @@ html, body {
   50% { 
     opacity: 0.7; 
   }
+}
+
+/* Mobile-first responsive enhancements */
+@media (max-width: 768px) {
+  .mobile-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+  }
+  
+  .mobile-sidebar.open {
+    transform: translateX(0);
+  }
+  
+  .mobile-overlay {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+  }
+}
+
+/* PWA safe area handling for iOS */
+@supports (padding: max(0px)) {
+  .safe-area-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  
+  .safe-area-left {
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+  
+  .safe-area-right {
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}
+
+/* Enhanced touch targets for mobile */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Mobile form improvements */
+@media (max-width: 640px) {
+  .mobile-form {
+    padding: 1rem;
+  }
+  
+  .mobile-input {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 0.75rem;
+  }
+  
+  .mobile-button {
+    padding: 1rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+}
+
+/* Improved focus states for accessibility */
+.focus-visible:focus-visible {
+  outline: 2px solid #4D9DE0;
+  outline-offset: 2px;
+}
+
+/* Loading states */
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
