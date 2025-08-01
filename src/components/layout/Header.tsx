@@ -1,10 +1,10 @@
 'use client'
 
-import React from 'react'
-import { Stethoscope, ChevronDown } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
-import { signOut } from '@/lib/auth'
-import { useRouter } from 'next/navigation'
+import React from 'react';
+import { Stethoscope, ChevronDown } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { signOut } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
 
 export function Header() {
   const { profile } = useAuth()

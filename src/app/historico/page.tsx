@@ -1,8 +1,8 @@
 'use client'
 
-import React from 'react'
-import { MainLayout } from '@/components/layout/MainLayout'
-import { History } from 'lucide-react'
+import React from 'react';
+import { MainLayout } from '@/components/layout/MainLayout';
+import { History } from 'lucide-react';
 
 export default function HistoricoPage() {
   return (

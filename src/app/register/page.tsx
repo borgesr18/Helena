@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Stethoscope, Eye, EyeOff } from 'lucide-react'
-import { signUp } from '@/lib/auth'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import React, { useState } from 'react';
+import { Stethoscope, Eye, EyeOff } from 'lucide-react';
+import { signUp } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
