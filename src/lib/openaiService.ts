@@ -1,4 +1,5 @@
 import OpenAI from 'openai'
+import { getUserPrescriptions } from '@/lib/prescriptionService'
 
 export interface PrescricaoData {
   paciente: string
@@ -105,6 +106,103 @@ Exemplo de resposta esperada:
       
       throw new Error('Erro desconhecido ao processar comando de voz')
     }
+  }
+
+  async gerarPrescricaoComContexto(
+    transcricao: string, 
+    pacienteNome: string,
+    userId: string
+  ): Promise<PrescricaoData> {
+    try {
+      const historico = await this.getPatientHistory(pacienteNome, userId);
+      const contextualPrompt = this.buildContextualPrompt(transcricao, pacienteNome, historico);
+      
+      const completion = await this.openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: 'Você é um assistente médico especializado com acesso ao histórico do paciente. Use o contexto para gerar prescrições mais precisas e detectar possíveis problemas.'
+          },
+          {
+            role: 'user',
+            content: contextualPrompt
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 800,
+      });
+
+      const responseContent = completion.choices[0]?.message?.content?.trim();
+      if (!responseContent) {
+        throw new Error('Resposta vazia da OpenAI');
+      }
+
+      const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('Formato de resposta inválido da OpenAI');
+      }
+
+      const prescricaoData = JSON.parse(jsonMatch[0]) as PrescricaoData;
+
+      if (!prescricaoData.paciente || !prescricaoData.medicamento || !prescricaoData.posologia) {
+        throw new Error('Campos obrigatórios ausentes na resposta da IA');
+      }
+
+      if (typeof prescricaoData.observacoes !== 'string') {
+        prescricaoData.observacoes = '';
+      }
+
+      return prescricaoData;
+    } catch (error) {
+      console.error('Erro ao gerar prescrição contextual:', error);
+      throw error;
+    }
+  }
+
+  private async getPatientHistory(pacienteNome: string, userId: string) {
+    try {
+      const prescricoes = await getUserPrescriptions(userId);
+      return prescricoes
+        .filter(p => p.paciente.toLowerCase() === pacienteNome.toLowerCase())
+        .slice(-5)
+        .map(p => ({
+          medicamento: p.medicamento,
+          posologia: p.posologia,
+          data: p.criado_em.toString(),
+          observacoes: p.observacoes
+        }));
+    } catch (error) {
+      console.error('Erro ao buscar histórico do paciente:', error);
+      return [];
+    }
+  }
+
+  private buildContextualPrompt(transcricao: string, pacienteNome: string, historico: Array<{medicamento: string; posologia: string; data: string; observacoes: string}>): string {
+    let prompt = `Analise o seguinte comando de voz para prescrição médica:\n\n"${transcricao}"\n\n`;
+    
+    if (historico.length > 0) {
+      prompt += `HISTÓRICO DO PACIENTE ${pacienteNome}:\n`;
+      historico.forEach((item, index) => {
+        prompt += `${index + 1}. ${item.medicamento} - ${item.posologia} (${new Date(item.data).toLocaleDateString('pt-BR')})\n`;
+        if (item.observacoes) {
+          prompt += `   Observações: ${item.observacoes}\n`;
+        }
+      });
+      prompt += '\n';
+    }
+
+    prompt += `Considerando o histórico acima, gere uma prescrição em formato JSON com os campos:
+- paciente: nome do paciente
+- medicamento: nome do medicamento
+- posologia: dosagem e frequência
+- observacoes: observações relevantes (incluindo alertas sobre histórico se necessário)
+
+IMPORTANTE: Se detectar possíveis interações com medicamentos anteriores ou padrões preocupantes no histórico, inclua alertas nas observações.
+
+Retorne APENAS o JSON, sem texto adicional.`;
+
+    return prompt;
   }
 }
 

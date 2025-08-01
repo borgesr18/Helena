@@ -215,6 +215,108 @@ export type Database = {
           created_at?: string
         }
       }
-    }
-  }
+   }
+   clinicas: {
+     Row: {
+       id: string
+       nome: string
+       cnpj: string | null
+       endereco: string | null
+       telefone: string | null
+       email: string | null
+       plano: string
+       ativo: boolean
+       max_usuarios: number
+       max_pacientes: number
+       created_at: string
+       updated_at: string
+     }
+     Insert: {
+       id?: string
+       nome: string
+       cnpj?: string | null
+       endereco?: string | null
+       telefone?: string | null
+       email?: string | null
+       plano?: string
+       ativo?: boolean
+       max_usuarios?: number
+       max_pacientes?: number
+       created_at?: string
+       updated_at?: string
+     }
+     Update: {
+       id?: string
+       nome?: string
+       cnpj?: string | null
+       endereco?: string | null
+       telefone?: string | null
+       email?: string | null
+       plano?: string
+       ativo?: boolean
+       max_usuarios?: number
+       max_pacientes?: number
+       created_at?: string
+       updated_at?: string
+     }
+   }
+   usuarios_clinica: {
+     Row: {
+       id: string
+       user_id: string
+       clinica_id: string
+       role: string
+       ativo: boolean
+       created_at: string
+       updated_at: string
+     }
+     Insert: {
+       id?: string
+       user_id: string
+       clinica_id: string
+       role?: string
+       ativo?: boolean
+       created_at?: string
+       updated_at?: string
+     }
+     Update: {
+       id?: string
+       user_id?: string
+       clinica_id?: string
+       role?: string
+       ativo?: boolean
+       created_at?: string
+       updated_at?: string
+     }
+   }
+   interacoes_medicamentos: {
+     Row: {
+       id: string
+       medicamento1: string
+       medicamento2: string
+       severidade: string
+       descricao: string
+       fonte: string
+       created_at: string
+     }
+     Insert: {
+       id?: string
+       medicamento1: string
+       medicamento2: string
+       severidade: string
+       descricao: string
+       fonte?: string
+       created_at?: string
+     }
+     Update: {
+       id?: string
+       medicamento1?: string
+       medicamento2?: string
+       severidade?: string
+       descricao?: string
+       fonte?: string
+       created_at?: string
+     }
+   }
+ }
 }
