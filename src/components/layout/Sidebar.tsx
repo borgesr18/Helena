@@ -28,7 +28,7 @@ export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="fixed left-0 top-22 bottom-0 w-64 bg-white shadow-sm border-r border-gray-100 z-40">
+    <aside className="fixed left-0 top-24 bottom-0 w-64 bg-white shadow-sm border-r border-gray-100 z-40">
       <nav className="p-4 space-y-2">
         {navigation.map((item) => {
           const isActive = pathname === item.href
