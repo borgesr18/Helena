@@ -38,19 +38,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
-      
-      if (session?.user) {
-        try {
-          const userProfile = await getUserProfile(session.user.id)
-          setProfile(userProfile)
-        } catch (error) {
-          console.error('Error fetching user profile:', error)
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error('Session error:', error)
+          setUser(null)
+          setProfile(null)
+          setLoading(false)
+          return
         }
+        
+        setUser(session?.user ?? null)
+        
+        if (session?.user) {
+          try {
+            const userProfile = await getUserProfile(session.user.id)
+            setProfile(userProfile)
+          } catch (error) {
+            console.error('Error fetching user profile:', error)
+          }
+        }
+        
+        setLoading(false)
+      } catch (error) {
+        console.error('Critical auth error:', error)
+        setUser(null)
+        setProfile(null)
+        setLoading(false)
       }
-      
-      setLoading(false)
     }
 
     getSession()

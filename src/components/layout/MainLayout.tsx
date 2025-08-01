@@ -4,17 +4,18 @@ import React, { useEffect } from 'react'
 import { Header } from './Header'
 import { Sidebar } from './Sidebar'
 import { useAuth } from '@/contexts/AuthContext'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !user && pathname !== '/login' && pathname !== '/register') {
       router.push('/login')
     }
-  }, [user, loading, router])
+  }, [user, loading, router, pathname])
 
   if (loading) {
     return (

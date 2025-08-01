@@ -3,11 +3,14 @@ import type { NextRequest } from 'next/server'
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
-
-  if (req.nextUrl.pathname !== '/login' && req.nextUrl.pathname !== '/register') {
+  
+  const publicRoutes = ['/login', '/register']
+  const isPublicRoute = publicRoutes.includes(req.nextUrl.pathname)
+  
+  if (isPublicRoute) {
     return res
   }
-
+  
   return res
 }
 
