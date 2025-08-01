@@ -18,6 +18,7 @@ export default function MobileNavigation({ isOpen, onClose }: MobileNavigationPr
     { href: '/', label: 'Dashboard', icon: 'fas fa-home' },
     { href: '/pacientes', label: 'Pacientes', icon: 'fas fa-users' },
     { href: '/prescricoes', label: 'Prescrições', icon: 'fas fa-prescription' },
+    { href: '/prescricoes/contextual', label: 'IA Contextual', icon: 'fas fa-brain' },
     { href: '/modelos', label: 'Modelos', icon: 'fas fa-file-medical' },
     { href: '/historico', label: 'Histórico', icon: 'fas fa-history' },
     { href: '/configuracoes', label: 'Configurações', icon: 'fas fa-cog' },
@@ -116,6 +117,14 @@ export default function MobileNavigation({ isOpen, onClose }: MobileNavigationPr
             >
               <i className="fas fa-signature text-lg"></i>
               <span className="font-medium">Assinaturas</span>
+            </button>
+            
+            <button
+              onClick={() => handleNavigation('/admin/clinicas')}
+              className="w-full flex items-center space-x-4 px-4 py-3 rounded-lg text-helena-gray hover:bg-helena-light hover:text-helena-blue transition-colors touch-target"
+            >
+              <i className="fas fa-building text-lg"></i>
+              <span className="font-medium">Clínicas</span>
             </button>
             
             <button
