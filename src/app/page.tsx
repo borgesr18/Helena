@@ -1,9 +1,9 @@
+import React from 'react'
 'use client'
 
-import React from 'react'
-import { MainLayout } from '@/components/layout/MainLayout'
-import { Mic, Printer, FileText, PenTool, CheckCircle, Users, Clock, Lightbulb } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { MainLayout } from '@/components/layout/MainLayout';
+import { Mic, Printer, FileText, PenTool, CheckCircle, Users, Clock, Lightbulb } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export default function Home() {
   const [transcriptionText, setTranscriptionText] = useState('Aguardando comando de voz...')
