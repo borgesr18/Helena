@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { MainLayout } from '@/components/layout/MainLayout'
-import { Plus, Search, FileText, Download, Eye, Calendar } from 'lucide-react'
+import { Plus, Search, FileText, Download, Eye } from 'lucide-react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
@@ -11,7 +11,7 @@ type Prescricao = {
   id: string
   paciente_id: string
   data: string
-  medicamentos: any[]
+  medicamentos: unknown[]
   observacoes: string | null
   pdf_url: string | null
   pacientes: {

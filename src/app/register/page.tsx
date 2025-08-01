@@ -37,8 +37,8 @@ export default function RegisterPage() {
         especialidade: especialidade || undefined,
       })
       router.push('/')
-    } catch (error: any) {
-      setError(error.message || 'Erro ao criar conta')
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Erro ao criar conta')
     } finally {
       setLoading(false)
     }

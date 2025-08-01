@@ -87,7 +87,7 @@ export type Database = {
           user_id: string
           paciente_id: string
           data: string
-          medicamentos: any
+          medicamentos: unknown
           observacoes: string | null
           pdf_url: string | null
           created_at: string
@@ -98,7 +98,7 @@ export type Database = {
           user_id: string
           paciente_id: string
           data?: string
-          medicamentos?: any
+          medicamentos?: unknown
           observacoes?: string | null
           pdf_url?: string | null
           created_at?: string
@@ -109,7 +109,7 @@ export type Database = {
           user_id?: string
           paciente_id?: string
           data?: string
-          medicamentos?: any
+          medicamentos?: unknown
           observacoes?: string | null
           pdf_url?: string | null
           created_at?: string

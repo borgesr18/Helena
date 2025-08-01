@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { MainLayout } from '@/components/layout/MainLayout'
-import { Settings, User, Shield, Bell } from 'lucide-react'
+import { User, Shield, Bell } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function ConfiguracoesPage() {

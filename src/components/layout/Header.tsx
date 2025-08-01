@@ -36,11 +36,11 @@ export function Header() {
               onClick={handleSignOut}
               className="flex items-center space-x-3 bg-gray-50 hover:bg-gray-100 rounded-lg px-4 py-2 transition-colors"
             >
-              <img 
-                src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" 
-                alt={profile?.nome || "Doctor"} 
-                className="w-8 h-8 rounded-full"
-              />
+              <div className="w-8 h-8 bg-helena-blue rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-medium">
+                  {(profile?.nome || 'Dr').charAt(0).toUpperCase()}
+                </span>
+              </div>
               <div className="text-left">
                 <p className="text-sm font-medium text-gray-800">
                   {profile?.nome || 'Dr. Usuário'}

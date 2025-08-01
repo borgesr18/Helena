@@ -125,7 +125,7 @@ export function generatePrescriptionPDF(data: PrescricaoData): jsPDF {
 export async function uploadPDFToSupabase(pdfBlob: Blob, fileName: string) {
   const { supabase } = await import('./supabase')
   
-  const { data, error } = await supabase.storage
+  const { error } = await supabase.storage
     .from('prescricoes')
     .upload(fileName, pdfBlob, {
       contentType: 'application/pdf',

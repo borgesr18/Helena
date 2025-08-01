@@ -98,8 +98,8 @@ export default function NovaPrescricaoPage() {
       if (error) throw error
 
       router.push('/prescricoes')
-    } catch (error: any) {
-      setError(error.message || 'Erro ao criar prescrição')
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Erro ao criar prescrição')
     } finally {
       setLoading(false)
     }

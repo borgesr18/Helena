@@ -39,8 +39,8 @@ export default function NovoPacientePage() {
       if (error) throw error
 
       router.push('/pacientes')
-    } catch (error: any) {
-      setError(error.message || 'Erro ao cadastrar paciente')
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Erro ao cadastrar paciente')
     } finally {
       setLoading(false)
     }

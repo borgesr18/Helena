@@ -7,14 +7,14 @@ import { useState, useEffect } from 'react'
 export default function Home() {
   const [transcriptionText, setTranscriptionText] = useState('Aguardando comando de voz...')
 
-  const examples = [
-    'Aguardando comando de voz...',
-    'Helena, prescreva para Maria Santos...',
-    'Helena, prescreva para João Silva: Dipirona 500mg...',
-    'Helena, gere receita para Ana Costa: Amoxicilina 500mg, 1 cápsula de 8 em 8 horas por 7 dias'
-  ]
-
   useEffect(() => {
+    const examples = [
+      'Aguardando comando de voz...',
+      'Helena, prescreva para Maria Santos...',
+      'Helena, prescreva para João Silva: Dipirona 500mg...',
+      'Helena, gere receita para Ana Costa: Amoxicilina 500mg, 1 cápsula de 8 em 8 horas por 7 dias'
+    ]
+
     let currentIndex = 0
     const interval = setInterval(() => {
       setTranscriptionText(examples[currentIndex])
@@ -53,7 +53,7 @@ export default function Home() {
               <Lightbulb className="text-helena-blue mt-1" size={16} />
               <div>
                 <p className="text-sm font-medium text-helena-blue mb-1">Exemplo de comando:</p>
-                <p className="text-sm text-gray-700">"Helena, prescreva para João da Silva: Dipirona 500mg, 1 comprimido de 8 em 8 horas por 3 dias"</p>
+                <p className="text-sm text-gray-700">&quot;Helena, prescreva para João da Silva: Dipirona 500mg, 1 comprimido de 8 em 8 horas por 3 dias&quot;</p>
               </div>
             </div>
           </div>
