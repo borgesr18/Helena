@@ -5,7 +5,6 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { ArrowLeft, Save, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function NovoPacientePage() {
@@ -26,17 +25,23 @@ export default function NovoPacientePage() {
     setError('')
 
     try {
-      const { error } = await supabase
-        .from('pacientes')
-        .insert({
-          user_id: user.id,
+      const response = await fetch('/api/pacientes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           nome,
           cpf: cpf || null,
           data_nascimento: dataNascimento || null,
           genero: genero || null,
         })
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Erro ao cadastrar paciente')
+      }
 
       router.push('/pacientes')
     } catch (error: unknown) {
