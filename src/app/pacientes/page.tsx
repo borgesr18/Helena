@@ -1,11 +1,11 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { MainLayout } from '@/components/layout/MainLayout'
-import { Plus, Search, Edit, Trash2 } from 'lucide-react'
-import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/contexts/AuthContext'
+import React, { useState, useEffect } from 'react';
+import { MainLayout } from '@/components/layout/MainLayout';
+import { Plus, Search, Edit, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Patient = {
   id: string

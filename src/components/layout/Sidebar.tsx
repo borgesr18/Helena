@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React from 'react';
 import { 
   Users, 
   FileText, 
@@ -9,8 +9,8 @@ import {
   PenTool, 
   Settings 
 } from 'lucide-react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const navigation = [
   { name: 'Pacientes', href: '/pacientes', icon: Users },

@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase } from './supabase';
 
 export async function signUp(email: string, password: string, userData: {
   nome: string

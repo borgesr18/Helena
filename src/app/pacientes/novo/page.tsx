@@ -1,12 +1,12 @@
 'use client'
 
-import React, { useState } from 'react'
-import { MainLayout } from '@/components/layout/MainLayout'
-import { ArrowLeft, Save, User } from 'lucide-react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/contexts/AuthContext'
+import React, { useState } from 'react';
+import { MainLayout } from '@/components/layout/MainLayout';
+import { ArrowLeft, Save, User } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function NovoPacientePage() {
   const [nome, setNome] = useState('')
