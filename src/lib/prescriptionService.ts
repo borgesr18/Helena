@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { PrescricaoData } from '@/types/prescription'
+import { generateAndStorePrescriptionPDF } from './pdf-generator'
 
 const prisma = new PrismaClient()
 
@@ -27,6 +28,12 @@ export async function savePrescription(
       }
     })
 
+    try {
+      await generateAndStorePrescriptionPDF(prescricaoData, prescricao.id)
+    } catch (pdfError) {
+      console.error('PDF generation failed:', pdfError)
+    }
+
     return {
       id: prescricao.id,
       paciente: prescricao.paciente,
@@ -48,7 +55,14 @@ export async function getUserPrescriptions(userId: string): Promise<PrescricaoWi
       orderBy: { criado_em: 'desc' }
     })
 
-    return prescricoes.map((p) => ({
+    return prescricoes.map((p: {
+      id: string;
+      paciente: string;
+      medicamento: string;
+      posologia: string;
+      observacoes: string;
+      criado_em: Date;
+    }) => ({
       id: p.id,
       paciente: p.paciente,
       medicamento: p.medicamento,

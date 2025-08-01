@@ -22,3 +22,67 @@ model Prescricao {
 
   @@map("prescricoes")
 }
+
+// User profile model
+model PerfilUsuario {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String   @unique @db.Uuid
+  nome          String
+  crm           String
+  especialidade String?
+  tipo          String   @default("médico")
+  plano         String?
+  ativo_licenca Boolean  @default(true)
+  empresa_id    String?  @db.Uuid
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@map("perfis_usuarios")
+}
+
+// Patient model
+model Paciente {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id          String    @db.Uuid
+  nome             String
+  cpf              String?
+  data_nascimento  DateTime?
+  genero           String?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  @@map("pacientes")
+}
+
+// Prescription template model
+model ModeloPrescricao {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id           String   @db.Uuid
+  nome              String
+  categoria         String?
+  especialidade     String?
+  medicamento       String
+  posologia         String
+  observacoes       String   @default("")
+  ativo             Boolean  @default(true)
+  uso_count         Int      @default(0)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@map("modelos_prescricao")
+}
+
+// User settings model
+model ConfiguracaoUsuario {
+  id                    String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id               String  @unique @db.Uuid
+  tema                  String  @default("claro")
+  modelo_ia             String  @default("gpt-3.5-turbo")
+  notificacoes_email    Boolean @default(true)
+  notificacoes_push     Boolean @default(true)
+  backup_automatico     Boolean @default(true)
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  @@map("configuracoes_usuario")
+}

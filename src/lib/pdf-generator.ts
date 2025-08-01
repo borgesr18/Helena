@@ -140,3 +140,45 @@ export async function uploadPDFToSupabase(pdfBlob: Blob, fileName: string) {
 
   return publicUrl
 }
+
+export async function generateAndStorePrescriptionPDF(
+  prescricaoData: {
+    paciente: string;
+    medicamento: string;
+    posologia: string;
+    observacoes?: string;
+  },
+  prescricaoId: string
+): Promise<string> {
+  try {
+    const pdfData: PrescricaoData = {
+      paciente: {
+        nome: prescricaoData.paciente
+      },
+      medico: {
+        nome: 'Dr. Usuário',
+        crm: '00000-XX'
+      },
+      medicamentos: [{
+        nome: prescricaoData.medicamento,
+        dosagem: prescricaoData.posologia,
+        via: 'Oral',
+        frequencia: prescricaoData.posologia,
+        duracao: '7 dias'
+      }],
+      observacoes: prescricaoData.observacoes,
+      data: new Date().toISOString()
+    }
+
+    const doc = generatePrescriptionPDF(pdfData)
+    const pdfBlob = new Blob([doc.output('arraybuffer')], { type: 'application/pdf' })
+    
+    const fileName = `prescricao-${prescricaoId}-${Date.now()}.pdf`
+    const publicUrl = await uploadPDFToSupabase(pdfBlob, fileName)
+    
+    return publicUrl
+  } catch (error) {
+    console.error('Error generating and storing PDF:', error)
+    throw new Error('Falha ao gerar PDF')
+  }
+}
