@@ -59,6 +59,7 @@ export default function LoginPage() {
               required
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-helena-blue focus:border-transparent transition-colors"
               placeholder="seu@email.com"
+              autoComplete="email"
             />
           </div>
 
@@ -75,6 +76,7 @@ export default function LoginPage() {
                 required
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-helena-blue focus:border-transparent transition-colors pr-12"
                 placeholder="Sua senha"
+                autoComplete="current-password"
               />
               <button
                 type="button"

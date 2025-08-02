@@ -74,6 +74,7 @@ export default function RegisterPage() {
               required
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-helena-blue focus:border-transparent transition-colors"
               placeholder="Dr. João Silva"
+              autoComplete="name"
             />
           </div>
 
@@ -89,6 +90,7 @@ export default function RegisterPage() {
               required
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-helena-blue focus:border-transparent transition-colors"
               placeholder="12345-SP"
+              autoComplete="off"
             />
           </div>
 
@@ -103,6 +105,7 @@ export default function RegisterPage() {
               onChange={(e) => setEspecialidade(e.target.value)}
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-helena-blue focus:border-transparent transition-colors"
               placeholder="Cardiologia"
+              autoComplete="organization-title"
             />
           </div>
 
@@ -118,6 +121,7 @@ export default function RegisterPage() {
               required
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-helena-blue focus:border-transparent transition-colors"
               placeholder="seu@email.com"
+              autoComplete="email"
             />
           </div>
 
@@ -134,6 +138,7 @@ export default function RegisterPage() {
                 required
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-helena-blue focus:border-transparent transition-colors pr-12"
                 placeholder="Sua senha"
+                autoComplete="new-password"
               />
               <button
                 type="button"
@@ -158,6 +163,7 @@ export default function RegisterPage() {
                 required
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-helena-blue focus:border-transparent transition-colors pr-12"
                 placeholder="Confirme sua senha"
+                autoComplete="new-password"
               />
               <button
                 type="button"

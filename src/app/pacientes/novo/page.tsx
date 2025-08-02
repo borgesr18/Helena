@@ -109,6 +109,7 @@ export default function NovoPacientePage() {
                 required
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-helena-blue focus:border-transparent transition-colors"
                 placeholder="Nome completo do paciente"
+                autoComplete="name"
               />
             </div>
 
@@ -123,6 +124,7 @@ export default function NovoPacientePage() {
                 onChange={handleCPFChange}
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-helena-blue focus:border-transparent transition-colors"
                 placeholder="000.000.000-00"
+                autoComplete="off"
               />
             </div>
 
@@ -136,6 +138,7 @@ export default function NovoPacientePage() {
                 value={dataNascimento}
                 onChange={(e) => setDataNascimento(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-helena-blue focus:border-transparent transition-colors"
+                autoComplete="bday"
               />
             </div>
 
