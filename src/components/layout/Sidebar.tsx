@@ -12,7 +12,8 @@ import {
   Shield,
   Mic,
   CreditCard,
-  BarChart
+  BarChart,
+  Video
 } from 'lucide-react'
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -37,6 +38,7 @@ const adminNavigation = [
   { name: 'SBIS', href: '/admin/sbis', icon: FileText },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart },
   { name: 'EMR', href: '/admin/emr', icon: FileText },
+  { name: 'Telemedicina', href: '/admin/telemedicine', icon: Video },
 ]
 
 export function Sidebar() {
