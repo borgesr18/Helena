@@ -25,6 +25,7 @@ model Prescricao {
   clinica           Clinica? @relation(fields: [clinica_id], references: [id])
   assinaturas       AssinaturaDigital[]
   sbis_submissions  SBISSubmission[]
+  entregas_medicamento EntregaMedicamento[]
 
   @@map("prescricoes")
 }
@@ -62,6 +63,7 @@ model Paciente {
   
   // Relations
   clinica             Clinica?  @relation(fields: [clinica_id], references: [id])
+  consultas           Consulta[]
   
   @@map("pacientes")
 }
@@ -90,9 +92,11 @@ model ConfiguracaoUsuario {
   user_id               String  @unique @db.Uuid
   tema                  String  @default("claro")
   modelo_ia             String  @default("gpt-3.5-turbo")
-  notificacoes_email    Boolean @default(true)
-  notificacoes_push     Boolean @default(true)
-  backup_automatico     Boolean @default(true)
+  notificacoes_email    Boolean  @default(true)
+  notificacoes_push     Boolean  @default(true)
+  notificacoes_sms      Boolean  @default(false)
+  notificacoes_consulta Boolean  @default(true)
+  backup_automatico     Boolean  @default(true)
   created_at            DateTime @default(now())
   updated_at            DateTime @updatedAt
 
@@ -126,6 +130,8 @@ model Clinica {
   auditorias            AuditoriaCompliance[]
   voice_sessions        VoiceSession[]
   sbis_submissions      SBISSubmission[]
+  consultas             Consulta[]
+  entregas_medicamento  EntregaMedicamento[]
   
   @@map("clinicas")
 }
@@ -271,4 +277,91 @@ model SBISSubmission {
   clinica           Clinica?   @relation(fields: [clinica_id], references: [id])
   
   @@map("sbis_submissions")
+}
+
+// Phase 7 - Telemedicine models
+model Consulta {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id               String   @db.Uuid
+  clinica_id            String?  @db.Uuid
+  paciente_id           String   @db.Uuid
+  tipo                  String   // presencial, video, telefone
+  status                String   @default("agendada") // agendada, em_andamento, concluida, cancelada
+  data_agendamento      DateTime
+  duracao_minutos       Int      @default(30)
+  link_video            String?  // WebRTC room ID
+  gravacao_url          String?  // Supabase Storage URL
+  observacoes           String?
+  receita_gerada        Boolean  @default(false)
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+  
+  // Relations
+  clinica               Clinica? @relation(fields: [clinica_id], references: [id])
+  paciente              Paciente @relation(fields: [paciente_id], references: [id])
+  notificacoes          NotificacaoConsulta[]
+  sessoes_video         SessaoVideo[]
+  
+  @@map("consultas")
+}
+
+model NotificacaoConsulta {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consulta_id           String   @db.Uuid
+  user_id               String   @db.Uuid
+  tipo                  String   // lembrete, confirmacao, cancelamento
+  canal                 String   // email, sms, push, in_app
+  conteudo              String
+  enviado_em            DateTime?
+  status                String   @default("pendente") // pendente, enviado, falhou
+  agendado_para         DateTime
+  created_at            DateTime @default(now())
+  
+  // Relations
+  consulta              Consulta @relation(fields: [consulta_id], references: [id], onDelete: Cascade)
+  
+  @@map("notificacoes_consulta")
+}
+
+model EntregaMedicamento {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  prescricao_id         String   @db.Uuid
+  user_id               String   @db.Uuid
+  clinica_id            String?  @db.Uuid
+  farmacia_parceira     String   // Nome da farmácia
+  status                String   @default("pendente") // pendente, confirmado, preparando, enviado, entregue, cancelado
+  endereco_entrega      Json     // Endereço completo
+  valor_total           Decimal? @db.Decimal(10,2)
+  codigo_rastreamento   String?
+  data_estimada         DateTime?
+  data_entrega          DateTime?
+  observacoes           String?
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+  
+  // Relations
+  prescricao            Prescricao @relation(fields: [prescricao_id], references: [id])
+  clinica               Clinica?   @relation(fields: [clinica_id], references: [id])
+  
+  @@map("entregas_medicamento")
+}
+
+model SessaoVideo {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consulta_id           String   @db.Uuid
+  room_id               String   @unique
+  medico_peer_id        String?
+  paciente_peer_id      String?
+  status                String   @default("aguardando") // aguardando, ativa, finalizada
+  iniciada_em           DateTime?
+  finalizada_em         DateTime?
+  duracao_segundos      Int?
+  qualidade_conexao     Json?    // Métricas de qualidade
+  gravacao_habilitada   Boolean  @default(false)
+  created_at            DateTime @default(now())
+  
+  // Relations
+  consulta              Consulta @relation(fields: [consulta_id], references: [id], onDelete: Cascade)
+  
+  @@map("sessoes_video")
 }

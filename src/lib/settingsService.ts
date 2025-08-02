@@ -9,6 +9,8 @@ export interface UserSettings {
   modelo_ia: 'gpt-3.5-turbo' | 'gpt-4' | 'claude-3'
   notificacoes_email: boolean
   notificacoes_push: boolean
+  notificacoes_sms: boolean
+  notificacoes_consulta: boolean
   backup_automatico: boolean
   created_at: Date
   updated_at: Date
@@ -61,6 +63,8 @@ async function createDefaultSettings(userId: string): Promise<UserSettings> {
         modelo_ia: 'gpt-3.5-turbo',
         notificacoes_email: true,
         notificacoes_push: true,
+        notificacoes_sms: false,
+        notificacoes_consulta: true,
         backup_automatico: true
       }
     })
