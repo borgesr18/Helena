@@ -11,7 +11,8 @@ import {
   Building2,
   Shield,
   Mic,
-  CreditCard
+  CreditCard,
+  BarChart
 } from 'lucide-react'
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -34,6 +35,8 @@ const adminNavigation = [
   { name: 'Compliance', href: '/admin/compliance', icon: Shield },
   { name: 'Cobrança', href: '/admin/billing', icon: CreditCard },
   { name: 'SBIS', href: '/admin/sbis', icon: FileText },
+  { name: 'Analytics', href: '/admin/analytics', icon: BarChart },
+  { name: 'EMR', href: '/admin/emr', icon: FileText },
 ]
 
 export function Sidebar() {
