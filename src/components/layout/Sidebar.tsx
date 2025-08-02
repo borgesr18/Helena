@@ -9,7 +9,9 @@ import {
   PenTool, 
   Settings,
   Building2,
-  Shield
+  Shield,
+  Mic,
+  CreditCard
 } from 'lucide-react'
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -17,6 +19,7 @@ import { usePathname } from 'next/navigation';
 const navigation = [
   { name: 'Pacientes', href: '/pacientes', icon: Users },
   { name: 'Prescrições', href: '/', icon: FileText },
+  { name: 'Prescrição por Voz', href: '/prescricoes/voice', icon: Mic },
   { name: 'Modelos', href: '/modelos', icon: FileCheck },
   { name: 'Histórico', href: '/historico', icon: History },
   { name: 'Assinaturas', href: '/assinaturas', icon: PenTool },
@@ -29,6 +32,8 @@ const settings = [
 const adminNavigation = [
   { name: 'Clínicas', href: '/admin/clinicas', icon: Building2 },
   { name: 'Compliance', href: '/admin/compliance', icon: Shield },
+  { name: 'Cobrança', href: '/admin/billing', icon: CreditCard },
+  { name: 'SBIS', href: '/admin/sbis', icon: FileText },
 ]
 
 export function Sidebar() {

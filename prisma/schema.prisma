@@ -22,8 +22,9 @@ model Prescricao {
   criado_em    DateTime @default(now()) @map("criado_em")
   
   // Relations
-  clinica      Clinica? @relation(fields: [clinica_id], references: [id])
-  assinaturas  AssinaturaDigital[]
+  clinica           Clinica? @relation(fields: [clinica_id], references: [id])
+  assinaturas       AssinaturaDigital[]
+  sbis_submissions  SBISSubmission[]
 
   @@map("prescricoes")
 }
@@ -100,25 +101,31 @@ model ConfiguracaoUsuario {
 
 // Multi-tenant models for Phase 3
 model Clinica {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nome          String
-  cnpj          String?  @unique
-  endereco      String?
-  telefone      String?
-  email         String?
-  plano         String   @default("gratuito") // gratuito, basico, premium
-  ativo         Boolean  @default(true)
-  max_usuarios  Int      @default(5)
-  max_pacientes Int      @default(100)
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome                  String
+  cnpj                  String?  @unique
+  endereco              String?
+  telefone              String?
+  email                 String?
+  plano                 String   @default("helena_free") // helena_free, helena_basic, helena_premium
+  ativo                 Boolean  @default(true)
+  max_usuarios          Int      @default(1)
+  max_pacientes         Int      @default(50)
+  stripe_customer_id    String?  @unique
+  stripe_subscription_id String? @unique
+  status_pagamento      String   @default("ativo") // ativo, pendente, cancelado
+  data_renovacao        DateTime?
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
   
   // Relations
-  usuarios      UsuarioClinica[]
-  pacientes     Paciente[]
-  prescricoes   Prescricao[]
-  certificados  CertificadoDigital[]
-  auditorias    AuditoriaCompliance[]
+  usuarios              UsuarioClinica[]
+  pacientes             Paciente[]
+  prescricoes           Prescricao[]
+  certificados          CertificadoDigital[]
+  auditorias            AuditoriaCompliance[]
+  voice_sessions        VoiceSession[]
+  sbis_submissions      SBISSubmission[]
   
   @@map("clinicas")
 }
@@ -215,7 +222,7 @@ model AuditoriaCompliance {
   id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id           String   @db.Uuid
   clinica_id        String?  @db.Uuid
-  tipo_evento       String   // assinatura, validacao_cfm, emissao_prescricao
+  tipo_evento       String   // assinatura, validacao_cfm, emissao_prescricao, transcricao_voz, pagamento
   descricao         String
   dados_evento      Json?    // Dados específicos do evento
   ip_origem         String?
@@ -226,4 +233,42 @@ model AuditoriaCompliance {
   clinica           Clinica? @relation(fields: [clinica_id], references: [id])
   
   @@map("auditoria_compliance")
+}
+
+// Phase 5 - Advanced Integrations models
+model VoiceSession {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id           String   @db.Uuid
+  clinica_id        String?  @db.Uuid
+  session_start     DateTime @default(now())
+  session_end       DateTime?
+  total_duration    Int?     // em segundos
+  commands_detected Int      @default(0)
+  transcriptions    Json?    // Array de transcrições
+  wake_words        Json?    // Array de wake words detectadas
+  created_at        DateTime @default(now())
+  
+  // Relations
+  clinica           Clinica? @relation(fields: [clinica_id], references: [id])
+  
+  @@map("voice_sessions")
+}
+
+model SBISSubmission {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  prescricao_id     String   @db.Uuid
+  user_id           String   @db.Uuid
+  clinica_id        String?  @db.Uuid
+  sbis_id           String?  // ID retornado pelo SBIS/RNDS
+  status            String   @default("pendente") // pendente, enviado, aprovado, rejeitado
+  fhir_bundle       Json?    // Bundle FHIR R4 enviado
+  response_data     Json?    // Resposta do SBIS
+  error_message     String?
+  submitted_at      DateTime @default(now())
+  
+  // Relations
+  prescricao        Prescricao @relation(fields: [prescricao_id], references: [id])
+  clinica           Clinica?   @relation(fields: [clinica_id], references: [id])
+  
+  @@map("sbis_submissions")
 }
