@@ -7,7 +7,9 @@ import {
   FileCheck, 
   History, 
   PenTool, 
-  Settings 
+  Settings,
+  Building2,
+  Shield
 } from 'lucide-react'
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -22,6 +24,11 @@ const navigation = [
 
 const settings = [
   { name: 'Configurações', href: '/configuracoes', icon: Settings },
+]
+
+const adminNavigation = [
+  { name: 'Clínicas', href: '/admin/clinicas', icon: Building2 },
+  { name: 'Compliance', href: '/admin/compliance', icon: Shield },
 ]
 
 export function Sidebar() {
@@ -54,6 +61,33 @@ export function Sidebar() {
             </Link>
           )
         })}
+        
+        <div className="pt-4 border-t border-gray-100">
+          {adminNavigation.map((item) => {
+            const isActive = pathname === item.href
+            const Icon = item.icon
+            
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors group cursor-pointer ${
+                  isActive
+                    ? 'bg-helena-blue text-white'
+                    : 'text-helena-gray hover:bg-helena-light hover:text-helena-blue'
+                }`}
+              >
+                <Icon 
+                  size={18} 
+                  className={`${
+                    isActive ? 'text-white' : 'group-hover:text-helena-blue'
+                  }`} 
+                />
+                <span className="font-medium">{item.name}</span>
+              </Link>
+            )
+          })}
+        </div>
         
         <div className="pt-4 border-t border-gray-100">
           {settings.map((item) => {

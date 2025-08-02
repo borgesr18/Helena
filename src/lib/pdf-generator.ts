@@ -1,4 +1,9 @@
 import jsPDF from 'jspdf';
+import { icpBrasilService, DigitalSignature } from './icpBrasilService';
+import crypto from 'crypto';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export type Medicamento = {
   nome: string
@@ -22,6 +27,13 @@ export type PrescricaoData = {
   medicamentos: Medicamento[]
   observacoes?: string
   data: string
+}
+
+export interface DigitalSignatureData {
+  certificateId: string;
+  userId: string;
+  ipAddress?: string;
+  userAgent?: string;
 }
 
 export function generatePrescriptionPDF(data: PrescricaoData): jsPDF {
@@ -120,6 +132,69 @@ export function generatePrescriptionPDF(data: PrescricaoData): jsPDF {
   doc.text(`CRM: ${data.medico.crm}`, pageWidth / 2, yPosition, { align: 'center' })
   
   return doc
+}
+
+export async function generateSignedPrescriptionPDF(
+  data: PrescricaoData,
+  signatureData: DigitalSignatureData
+): Promise<{ pdf: jsPDF; signature: DigitalSignature }> {
+  const doc = generatePrescriptionPDF(data);
+  
+  const pdfBuffer = doc.output('arraybuffer');
+  const documentHash = crypto.createHash('sha256').update(Buffer.from(pdfBuffer)).digest('hex');
+  
+  const signature = await icpBrasilService.signDocument(
+    documentHash,
+    signatureData.certificateId,
+    signatureData.userId
+  );
+  
+  const pageHeight = doc.internal.pageSize.height;
+  let yPosition = pageHeight - 80;
+  
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('ASSINATURA DIGITAL ICP-BRASIL', 20, yPosition);
+  yPosition += 6;
+  
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Certificado: ${signature.certificate.serialNumber}`, 20, yPosition);
+  yPosition += 4;
+  doc.text(`Emissor: ${signature.certificate.issuer}`, 20, yPosition);
+  yPosition += 4;
+  doc.text(`Assinado em: ${signature.timestamp.toLocaleString('pt-BR')}`, 20, yPosition);
+  yPosition += 4;
+  doc.text(`Hash: ${signature.hash.substring(0, 32)}...`, 20, yPosition);
+  yPosition += 6;
+  
+  doc.setFontSize(8);
+  doc.text('Este documento foi assinado digitalmente conforme MP 2.200-2/2001 e Lei 14.063/2020', 20, yPosition);
+  yPosition += 3;
+  doc.text('Validade jurídica garantida por certificado ICP-Brasil', 20, yPosition);
+  
+  return { pdf: doc, signature };
+}
+
+export async function storeDigitalSignature(
+  prescricaoId: string,
+  signature: DigitalSignature,
+  signatureData: DigitalSignatureData
+): Promise<string> {
+  const stored = await prisma.assinaturaDigital.create({
+    data: {
+      prescricao_id: prescricaoId,
+      certificado_id: signatureData.certificateId,
+      user_id: signatureData.userId,
+      hash_documento: signature.hash,
+      assinatura_digital: signature.signature,
+      timestamp_assinatura: signature.timestamp,
+      ip_origem: signatureData.ipAddress,
+      user_agent: signatureData.userAgent,
+      status: 'valida'
+    }
+  });
+  
+  return stored.id;
 }
 
 export async function uploadPDFToSupabase(pdfBlob: Blob, fileName: string) {
