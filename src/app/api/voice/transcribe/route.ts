@@ -3,12 +3,17 @@ import OpenAI from 'openai';
 import { getCurrentUser } from '@/lib/auth';
 import { complianceAuditService } from '@/lib/complianceAuditService';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function POST(request: NextRequest) {
   try {
+    const apiKey = process.env.OPENAI_API_KEY
+    if (!apiKey) {
+      return NextResponse.json({ error: 'OPENAI_API_KEY não está configurada' }, { status: 500 })
+    }
+
+    const openai = new OpenAI({
+      apiKey: apiKey,
+    })
+
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });

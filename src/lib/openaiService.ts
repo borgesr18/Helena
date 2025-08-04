@@ -9,12 +9,14 @@ export interface PrescricaoData {
 }
 
 export class OpenAIService {
-  private openai: OpenAI
+  private openai: OpenAI | null
 
   constructor() {
     const apiKey = process.env.OPENAI_API_KEY
     if (!apiKey) {
-      throw new Error('OPENAI_API_KEY não está definida nas variáveis de ambiente')
+      console.warn('OPENAI_API_KEY não está definida nas variáveis de ambiente')
+      this.openai = null
+      return
     }
 
     this.openai = new OpenAI({
@@ -23,6 +25,9 @@ export class OpenAIService {
   }
 
   async gerarPrescricao(transcricao: string): Promise<PrescricaoData> {
+    if (!this.openai) {
+      throw new Error('OpenAI client não configurado')
+    }
     try {
       const prompt = `
 Você é um assistente médico especializado em interpretar comandos de voz para gerar prescrições médicas estruturadas.
@@ -109,10 +114,13 @@ Exemplo de resposta esperada:
   }
 
   async gerarPrescricaoComContexto(
-    transcricao: string, 
+    transcricao: string,
     pacienteNome: string,
     userId: string
   ): Promise<PrescricaoData> {
+    if (!this.openai) {
+      throw new Error('OpenAI client não configurado')
+    }
     try {
       const historico = await this.getPatientHistory(pacienteNome, userId);
       const contextualPrompt = this.buildContextualPrompt(transcricao, pacienteNome, historico);
