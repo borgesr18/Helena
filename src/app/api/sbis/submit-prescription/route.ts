@@ -1,17 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, getUserProfile } from '@/lib/auth';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 import { sbisService } from '@/lib/sbisService';
 import { complianceAuditService } from '@/lib/complianceAuditService';
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
+    const supabase = createRouteHandlerClient({ cookies });
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !session?.user) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    const profile = await getUserProfile(user.id);
-    if (!profile) {
+    const { data: profile, error: profileError } = await supabase
+      .from('perfis_usuarios')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .single();
+
+    if (profileError || !profile) {
       return NextResponse.json({ error: 'Perfil não encontrado' }, { status: 404 });
     }
 
@@ -62,7 +70,7 @@ export async function POST(request: NextRequest) {
     const result = await sbisService.submitPrescription(sbisData);
 
     await complianceAuditService.logFromRequest(request, {
-      userId: user.id,
+      userId: session.user.id,
       clinicaId: profile.empresa_id,
       tipo: 'emissao_prescricao',
       descricao: 'Prescrição submetida ao SBIS/RNDS',
