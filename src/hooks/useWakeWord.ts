@@ -31,8 +31,20 @@ export function useWakeWord({
   const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
+    // Verificar se estamos no lado do cliente
+    if (typeof window === 'undefined') {
+      setIsSupported(false)
+      return
+    }
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    setIsSupported(!!SpeechRecognition)
+    const isAPISupported = !!SpeechRecognition
+    
+    setIsSupported(isAPISupported)
+    
+    if (!isAPISupported) {
+      setError('Reconhecimento de voz não é suportado neste navegador')
+    }
   }, [])
 
   const normalizeText = useCallback((text: string): string => {
@@ -61,9 +73,9 @@ export function useWakeWord({
           matrix[i][j] = matrix[i - 1][j - 1]
         } else {
           matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1,
-            matrix[i][j - 1] + 1,
-            matrix[i - 1][j] + 1
+            matrix[i - 1][j - 1] + 1, // substitution
+            matrix[i][j - 1] + 1,     // insertion
+            matrix[i - 1][j] + 1      // deletion
           )
         }
       }
@@ -72,41 +84,61 @@ export function useWakeWord({
     return matrix[str2.length][str1.length]
   }, [])
 
-  const calculateSimilarity = useCallback((str1: string, str2: string): number => {
-    const longer = str1.length > str2.length ? str1 : str2
-    const shorter = str1.length > str2.length ? str2 : str1
+  const isSimilar = useCallback((text: string, target: string): boolean => {
+    const normalizedText = normalizeText(text)
+    const normalizedTarget = normalizeText(target)
     
-    if (longer.length === 0) return 1.0
+    // Exact match
+    if (normalizedText.includes(normalizedTarget)) {
+      return true
+    }
     
-    const editDistance = levenshteinDistance(longer, shorter)
-    return (longer.length - editDistance) / longer.length
-  }, [levenshteinDistance])
-
-  const containsWakeWord = useCallback((text: string): boolean => {
-    const normalized = normalizeText(text)
-    const normalizedWakeWord = normalizeText(wakeWord)
+    // Fuzzy match using Levenshtein distance
+    const words = normalizedText.split(/\s+/)
     
-    const words = normalized.split(/\s+/)
-    return words.some(word => {
-      if (word === normalizedWakeWord) return true
+    for (const word of words) {
+      const distance = levenshteinDistance(word, normalizedTarget)
+      const similarity = 1 - (distance / Math.max(word.length, normalizedTarget.length))
       
-      const similarity = calculateSimilarity(word, normalizedWakeWord)
-      return similarity > 0.8
-    })
-  }, [wakeWord, normalizeText, calculateSimilarity])
+      if (similarity >= 0.7) { // 70% similarity threshold
+        return true
+      }
+    }
+    
+    return false
+  }, [normalizeText, levenshteinDistance])
 
-  const startListening = useCallback(() => {
+  const startRecognition = useCallback(() => {
+    // Verificação adicional para SSR
+    if (typeof window === 'undefined') {
+      const errorMsg = 'Reconhecimento de voz não disponível no servidor'
+      setError(errorMsg)
+      return
+    }
+
     if (!isSupported) {
       setError('Reconhecimento de voz não é suportado neste navegador')
       return
     }
 
     try {
+      // Clean up existing recognition
       if (recognitionRef.current) {
         recognitionRef.current.stop()
+        recognitionRef.current = null
+      }
+
+      if (restartTimeoutRef.current) {
+        clearTimeout(restartTimeoutRef.current)
+        restartTimeoutRef.current = null
       }
 
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+      
+      if (!SpeechRecognition) {
+        throw new Error('SpeechRecognition API não encontrada')
+      }
+      
       const recognition = new SpeechRecognition()
 
       recognition.continuous = true
@@ -120,68 +152,108 @@ export function useWakeWord({
       }
 
       recognition.onresult = (event: SpeechRecognitionEvent) => {
-        const lastResult = event.results[event.results.length - 1]
-        const transcript = lastResult[0].transcript
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i]
+          const transcript = result[0].transcript.trim()
 
-        if (containsWakeWord(transcript)) {
-          recognition.stop()
-          onWake()
+          if (transcript && isSimilar(transcript, wakeWord)) {
+            console.log(`Wake word "${wakeWord}" detected in: "${transcript}"`)
+            onWake()
+            
+            if (!continuous) {
+              recognition.stop()
+              return
+            }
+          }
         }
       }
 
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error('Speech recognition error:', event.error)
-        setError(`Erro no reconhecimento de voz: ${event.error}`)
-        setIsListening(false)
+        console.warn('Wake word recognition error:', event.error)
+        
+        // Handle specific errors
+        if (event.error === 'not-allowed') {
+          setError('Permissão para usar o microfone foi negada')
+          setIsListening(false)
+          return
+        }
+        
+        if (event.error === 'audio-capture') {
+          setError('Erro ao capturar áudio. Verifique as permissões do microfone.')
+          setIsListening(false)
+          return
+        }
 
-        if (continuous && ['no-speech', 'audio-capture', 'network'].includes(event.error)) {
+        // For other errors, try to restart if continuous mode is enabled
+        if (continuous && isListening) {
           restartTimeoutRef.current = setTimeout(() => {
-            if (recognitionRef.current) {
-              startListening()
+            if (isListening) {
+              startRecognition()
             }
           }, 1000)
+        } else {
+          setIsListening(false)
         }
       }
 
       recognition.onend = () => {
-        setIsListening(false)
-
-        if (continuous && recognitionRef.current) {
+        if (continuous && isListening) {
+          // Automatically restart recognition after a short delay
           restartTimeoutRef.current = setTimeout(() => {
-            if (recognitionRef.current) {
-              startListening()
+            if (isListening) {
+              startRecognition()
             }
           }, 100)
+        } else {
+          setIsListening(false)
         }
       }
 
       recognitionRef.current = recognition
       recognition.start()
-    } catch (err) {
-      console.error('Error starting speech recognition:', err)
-      setError('Erro ao iniciar reconhecimento de voz')
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao iniciar reconhecimento de wake word'
+      console.error('Error starting wake word recognition:', error)
+      setError(errorMessage)
+      setIsListening(false)
     }
-  }, [isSupported, language, containsWakeWord, onWake, continuous])
+  }, [isSupported, language, wakeWord, onWake, continuous, isSimilar, isListening])
+
+  const startListening = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+    
+    startRecognition()
+  }, [startRecognition])
 
   const stopListening = useCallback(() => {
+    setIsListening(false)
+    
     if (restartTimeoutRef.current) {
       clearTimeout(restartTimeoutRef.current)
       restartTimeoutRef.current = null
     }
-
+    
     if (recognitionRef.current) {
       recognitionRef.current.stop()
       recognitionRef.current = null
     }
-    
-    setIsListening(false)
   }, [])
 
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      stopListening()
+      if (restartTimeoutRef.current) {
+        clearTimeout(restartTimeoutRef.current)
+      }
+      
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
     }
-  }, [stopListening])
+  }, [])
 
   return {
     isListening,
