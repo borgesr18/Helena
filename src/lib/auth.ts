@@ -1,5 +1,3 @@
-'use client'
-
 import { supabase } from './supabase';
 
 export async function signUp(email: string, password: string, userData: {
