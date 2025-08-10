@@ -1,8 +1,8 @@
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { initializeErrorHandling } from "@/lib/errorHandler";
 import type { Metadata, Viewport } from "next";
+import AppInitializer from "@/components/AppInitializer";
 
 export const metadata: Metadata = {
   title: "Helena - Assistente Médica de Prescrição",
@@ -31,7 +31,7 @@ export default function RootLayout({
     <html lang="pt-BR">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Helena" />
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
@@ -42,26 +42,7 @@ export default function RootLayout({
             {children}
           </AuthProvider>
         </ErrorBoundary>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js')
-                    .then(function(registration) {
-                      console.log('SW registered: ', registration);
-                    }, function(registrationError) {
-                      console.log('SW registration failed: ', registrationError);
-                    });
-                });
-              }
-              
-              // Inicializar tratamento global de erros
-              ${initializeErrorHandling.toString()}
-              initializeErrorHandling();
-            `,
-          }}
-        />
+        <AppInitializer />
       </body>
     </html>
   );
