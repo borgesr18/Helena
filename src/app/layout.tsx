@@ -2,6 +2,7 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { initializeErrorHandling } from "@/lib/errorHandler";
+import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
   title: "Helena - Assistente Médica de Prescrição",
