@@ -1,16 +1,16 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { EnderecoEntrega, DadosEvento, Transcriptions, WakeWords, FHIRBundle, ResponseData, QualidadeConexao } from '@/types/database';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'http://localhost';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'anon-key';
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
   console.warn('Missing Supabase environment variables');
 }
 
 export const supabase = createClientComponentClient({
-  supabaseUrl: supabaseUrl ?? '',
-  supabaseKey: supabaseAnonKey ?? '',
+  supabaseUrl,
+  supabaseKey: supabaseAnonKey,
 });
 
 export type Database = {

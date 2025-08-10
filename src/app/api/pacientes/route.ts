@@ -15,7 +15,7 @@ export async function GET() {
       )
     }
 
-    const patients = await getUserPatients(session.user.id)
+    const patients = await getUserPatients(supabase, session.user.id)
     return NextResponse.json(patients)
 
   } catch (error) {
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       genero
     }
 
-    const patient = await createPatient(session.user.id, patientData)
+    const patient = await createPatient(supabase, session.user.id, patientData)
     return NextResponse.json(patient, { status: 201 })
 
   } catch (error) {
