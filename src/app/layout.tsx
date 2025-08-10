@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { initializeErrorHandling } from "@/lib/errorHandler";
 
 export const metadata: Metadata = {
   title: "Helena - Assistente Médica de Prescrição",
@@ -32,9 +34,11 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
       </head>
       <body className="antialiased">
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ErrorBoundary>
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -48,6 +52,10 @@ export default function RootLayout({
                     });
                 });
               }
+              
+              // Inicializar tratamento global de erros
+              ${initializeErrorHandling.toString()}
+              initializeErrorHandling();
             `,
           }}
         />
