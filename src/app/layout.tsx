@@ -1,6 +1,7 @@
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
-import type { Metadata, Viewport } from 'next'
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { initializeErrorHandling } from "@/lib/errorHandler";
 
 export const metadata: Metadata = {
   title: "Helena - Assistente Médica de Prescrição",
@@ -35,9 +36,11 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
       </head>
       <body className="antialiased">
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ErrorBoundary>
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -51,6 +54,10 @@ export default function RootLayout({
                     });
                 });
               }
+              
+              // Inicializar tratamento global de erros
+              ${initializeErrorHandling.toString()}
+              initializeErrorHandling();
             `,
           }}
         />

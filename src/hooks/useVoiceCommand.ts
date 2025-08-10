@@ -35,11 +35,34 @@ export function useVoiceCommand({
   const finalTranscriptRef = useRef('')
 
   useEffect(() => {
+    // Verificar se estamos no lado do cliente (browser)
+    if (typeof window === 'undefined') {
+      setIsSupported(false)
+      return
+    }
+
+    // Verificar se SpeechRecognition está disponível
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    setIsSupported(!!SpeechRecognition)
+    const isAPISupported = !!SpeechRecognition
+    
+    setIsSupported(isAPISupported)
+    
+    if (!isAPISupported) {
+      setError('Reconhecimento de voz não é suportado neste navegador')
+    }
   }, [])
 
   const startListening = useCallback(() => {
+    // Verificação adicional para evitar erros durante SSR
+    if (typeof window === 'undefined') {
+      const errorMsg = 'Reconhecimento de voz não disponível no servidor'
+      setError(errorMsg)
+      if (onError) {
+        onError(errorMsg)
+      }
+      return
+    }
+
     if (!isSupported) {
       const errorMsg = 'Reconhecimento de voz não é suportado neste navegador'
       setError(errorMsg)
@@ -60,6 +83,11 @@ export function useVoiceCommand({
       }
 
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+      
+      if (!SpeechRecognition) {
+        throw new Error('SpeechRecognition API não encontrada')
+      }
+      
       const recognition = new SpeechRecognition()
 
       recognition.continuous = true
@@ -100,68 +128,94 @@ export function useVoiceCommand({
         if (finalTranscript.trim().length > 0) {
           if (timeoutRef.current) {
             clearTimeout(timeoutRef.current)
-            timeoutRef.current = setTimeout(() => {
-              recognition.stop()
-            }, timeout)
+            timeoutRef.current = null
           }
-        }
-      }
-
-      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error('Voice command recognition error:', event.error)
-        const errorMessage = `Erro na captura do comando: ${event.error}`
-        setError(errorMessage)
-        setIsListening(false)
-        
-        if (onError) {
-          onError(errorMessage)
-        }
-
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current)
-          timeoutRef.current = null
+          recognition.stop()
         }
       }
 
       recognition.onend = () => {
         setIsListening(false)
-
+        
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current)
           timeoutRef.current = null
         }
 
-        const finalResult = finalTranscriptRef.current.trim()
-        if (finalResult.length > 0) {
-          onResult(finalResult)
+        const finalText = finalTranscriptRef.current.trim()
+        if (finalText.length > 0) {
+          onResult(finalText)
+        }
+      }
+
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+        setIsListening(false)
+        
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current)
+          timeoutRef.current = null
+        }
+
+        let errorMessage = 'Erro no reconhecimento de voz'
+        
+        switch (event.error) {
+          case 'no-speech':
+            errorMessage = 'Nenhuma fala detectada. Tente falar mais alto ou verificar o microfone.'
+            break
+          case 'audio-capture':
+            errorMessage = 'Erro ao capturar áudio. Verifique as permissões do microfone.'
+            break
+          case 'not-allowed':
+            errorMessage = 'Permissão para usar o microfone foi negada.'
+            break
+          case 'network':
+            errorMessage = 'Erro de rede durante o reconhecimento de voz.'
+            break
+          case 'service-not-allowed':
+            errorMessage = 'Serviço de reconhecimento de voz não permitido.'
+            break
+          case 'bad-grammar':
+            errorMessage = 'Erro na configuração de gramática.'
+            break
+          case 'language-not-supported':
+            errorMessage = `Idioma ${language} não é suportado.`
+            break
+          default:
+            errorMessage = `Erro no reconhecimento de voz: ${event.error}`
+        }
+        
+        setError(errorMessage)
+        if (onError) {
+          onError(errorMessage)
         }
       }
 
       recognitionRef.current = recognition
       recognition.start()
-    } catch (err) {
-      console.error('Error starting voice command recognition:', err)
-      const errorMsg = 'Erro ao iniciar captura de comando de voz'
-      setError(errorMsg)
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao iniciar reconhecimento de voz'
+      setError(errorMessage)
+      setIsListening(false)
+      
       if (onError) {
-        onError(errorMsg)
+        onError(errorMessage)
       }
     }
   }, [isSupported, language, timeout, onResult, onError])
 
   const stopListening = useCallback(() => {
+    if (recognitionRef.current && isListening) {
+      recognitionRef.current.stop()
+    }
+    
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
       timeoutRef.current = null
     }
-
-    if (recognitionRef.current) {
-      recognitionRef.current.stop()
-      recognitionRef.current = null
-    }
     
     setIsListening(false)
-  }, [])
+  }, [isListening])
 
   const clearTranscript = useCallback(() => {
     setTranscript('')
@@ -169,11 +223,18 @@ export function useVoiceCommand({
     setError(null)
   }, [])
 
+  // Cleanup ao desmontar o componente
   useEffect(() => {
     return () => {
-      stopListening()
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+      
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
     }
-  }, [stopListening])
+  }, [])
 
   return {
     isListening,
