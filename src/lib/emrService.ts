@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-import { getCurrentUser } from './auth';
 
 const prisma = new PrismaClient();
 
@@ -40,6 +39,7 @@ export interface EMRSummary {
 
 export class EMRService {
   async getPatientMedicalHistory(patientId: string, userId: string): Promise<MedicalHistory | null> {
+    const { getCurrentUser } = await import('./auth');
     const user = await getCurrentUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -288,6 +288,7 @@ export class EMRService {
     event: Omit<PatientTimeline, 'id' | 'createdBy'>,
     userId: string
   ): Promise<void> {
+    const { getCurrentUser } = await import('./auth');
     const user = await getCurrentUser();
     if (!user) throw new Error('User not authenticated');
 

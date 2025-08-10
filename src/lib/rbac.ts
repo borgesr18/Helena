@@ -1,4 +1,3 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { PrismaClient } from '@prisma/client';
 
@@ -21,6 +20,7 @@ export interface UserContext {
 
 export async function getUserContext(): Promise<UserContext | null> {
   try {
+    const { createRouteHandlerClient } = await import('@supabase/auth-helpers-nextjs');
     const supabase = createRouteHandlerClient({ cookies });
     const { data: { session } } = await supabase.auth.getSession();
     

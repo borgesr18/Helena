@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-import { getCurrentUser } from './auth';
 
 const prisma = new PrismaClient();
 
@@ -321,6 +320,7 @@ export class AnalyticsService {
     userId: string,
     clinicaId?: string
   ): Promise<ReportData> {
+    const { getCurrentUser } = await import('./auth');
     const user = await getCurrentUser();
     if (!user) throw new Error('User not authenticated');
 
