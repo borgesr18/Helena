@@ -1,7 +1,6 @@
-import { PrismaClient } from '@prisma/client'
 import crypto from 'crypto'
-
-const prisma = new PrismaClient()
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/supabase'
 
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'helena-default-key-32-chars-long'
 
@@ -10,17 +9,17 @@ export interface Patient {
   user_id: string
   nome: string
   cpf?: string
-  data_nascimento?: Date
-  genero?: string
-  created_at: Date
-  updated_at: Date
+  data_nascimento?: string | null
+  genero?: string | null
+  created_at: string
+  updated_at: string
 }
 
 export interface CreatePatientData {
   nome: string
-  cpf?: string
-  data_nascimento?: string
-  genero?: string
+  cpf?: string | null
+  data_nascimento?: string | null
+  genero?: string | null
 }
 
 function encrypt(text: string): string {
@@ -43,25 +42,22 @@ function decrypt(encryptedText: string): string {
   }
 }
 
-export async function getUserPatients(userId: string): Promise<Patient[]> {
+export async function getUserPatients(
+  supabase: SupabaseClient<Database>,
+  userId: string
+): Promise<Patient[]> {
   try {
-    const patients = await prisma.paciente.findMany({
-      where: { user_id: userId },
-      orderBy: { created_at: 'desc' }
-    })
+    const { data, error } = await supabase
+      .from('pacientes')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
 
-    return patients.map((patient: {
-      id: string;
-      user_id: string;
-      nome: string;
-      cpf: string | null;
-      data_nascimento: Date | null;
-      genero: string | null;
-      created_at: Date;
-      updated_at: Date;
-    }) => ({
+    if (error) throw error
+
+    return (data || []).map((patient) => ({
       ...patient,
-      cpf: patient.cpf ? decrypt(patient.cpf) : undefined
+      cpf: patient.cpf ? decrypt(patient.cpf) : undefined,
     })) as Patient[]
   } catch (error) {
     console.error('Error fetching patients:', error)
@@ -70,23 +66,30 @@ export async function getUserPatients(userId: string): Promise<Patient[]> {
 }
 
 export async function createPatient(
-  userId: string, 
+  supabase: SupabaseClient<Database>,
+  userId: string,
   patientData: CreatePatientData
 ): Promise<Patient> {
   try {
-    const patient = await prisma.paciente.create({
-      data: {
-        user_id: userId,
-        nome: patientData.nome,
-        cpf: patientData.cpf ? encrypt(patientData.cpf) : null,
-        data_nascimento: patientData.data_nascimento ? new Date(patientData.data_nascimento) : null,
-        genero: patientData.genero || null
-      }
-    })
+    const payload = {
+      user_id: userId,
+      nome: patientData.nome,
+      cpf: patientData.cpf ? encrypt(patientData.cpf) : null,
+      data_nascimento: patientData.data_nascimento ?? null,
+      genero: patientData.genero ?? null,
+    }
+
+    const { data, error } = await supabase
+      .from('pacientes')
+      .insert(payload)
+      .select('*')
+      .single()
+
+    if (error) throw error
 
     return {
-      ...patient,
-      cpf: patient.cpf ? decrypt(patient.cpf) : undefined
+      ...data,
+      cpf: data.cpf ? decrypt(data.cpf) : undefined,
     } as Patient
   } catch (error) {
     console.error('Error creating patient:', error)
@@ -95,30 +98,31 @@ export async function createPatient(
 }
 
 export async function updatePatient(
+  supabase: SupabaseClient<Database>,
   userId: string,
   patientId: string,
   updates: Partial<CreatePatientData>
 ): Promise<Patient> {
   try {
-    const updateData: Record<string, string | Date | null> = { ...updates }
-    if (updateData.cpf && typeof updateData.cpf === 'string') {
-      updateData.cpf = encrypt(updateData.cpf)
-    }
-    if (updateData.data_nascimento) {
-      updateData.data_nascimento = new Date(updateData.data_nascimento)
-    }
+    const updateData: Record<string, string | null> = {}
+    if (typeof updates.nome === 'string') updateData.nome = updates.nome
+    if (typeof updates.cpf === 'string') updateData.cpf = encrypt(updates.cpf)
+    if (updates.data_nascimento !== undefined) updateData.data_nascimento = updates.data_nascimento
+    if (updates.genero !== undefined) updateData.genero = updates.genero
 
-    const patient = await prisma.paciente.update({
-      where: { 
-        id: patientId,
-        user_id: userId
-      },
-      data: updateData
-    })
+    const { data, error } = await supabase
+      .from('pacientes')
+      .update(updateData)
+      .eq('id', patientId)
+      .eq('user_id', userId)
+      .select('*')
+      .single()
+
+    if (error) throw error
 
     return {
-      ...patient,
-      cpf: patient.cpf ? decrypt(patient.cpf) : undefined
+      ...data,
+      cpf: data.cpf ? decrypt(data.cpf) : undefined,
     } as Patient
   } catch (error) {
     console.error('Error updating patient:', error)
@@ -126,14 +130,19 @@ export async function updatePatient(
   }
 }
 
-export async function deletePatient(userId: string, patientId: string): Promise<void> {
+export async function deletePatient(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  patientId: string
+): Promise<void> {
   try {
-    await prisma.paciente.delete({
-      where: { 
-        id: patientId,
-        user_id: userId
-      }
-    })
+    const { error } = await supabase
+      .from('pacientes')
+      .delete()
+      .eq('id', patientId)
+      .eq('user_id', userId)
+
+    if (error) throw error
   } catch (error) {
     console.error('Error deleting patient:', error)
     throw new Error('Falha ao excluir paciente')
@@ -141,22 +150,25 @@ export async function deletePatient(userId: string, patientId: string): Promise<
 }
 
 export async function getPatientById(
-  userId: string, 
+  supabase: SupabaseClient<Database>,
+  userId: string,
   patientId: string
 ): Promise<Patient | null> {
   try {
-    const patient = await prisma.paciente.findFirst({
-      where: { 
-        id: patientId,
-        user_id: userId 
-      }
-    })
+    const { data, error } = await supabase
+      .from('pacientes')
+      .select('*')
+      .eq('id', patientId)
+      .eq('user_id', userId)
+      .single()
 
-    if (!patient) return null
+    if (error) throw error
+
+    if (!data) return null
 
     return {
-      ...patient,
-      cpf: patient.cpf ? decrypt(patient.cpf) : undefined
+      ...data,
+      cpf: data.cpf ? decrypt(data.cpf) : undefined,
     } as Patient
   } catch (error) {
     console.error('Error fetching patient:', error)

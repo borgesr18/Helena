@@ -71,12 +71,12 @@ export async function getCurrentUser() {
 }
 
 export async function getUserProfile(userId: string) {
-  const { data, error } = await supabase
+  const { data, error, status } = await supabase
     .from('perfis_usuarios')
     .select('*')
     .eq('user_id', userId)
-    .single()
+    .maybeSingle()
 
-  if (error) throw error
-  return data
+  if (error && status !== 406) throw error
+  return data ?? null
 }
