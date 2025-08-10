@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { openaiService, PrescricaoData } from '@/lib/openaiService'
+import { OpenAIService, PrescricaoData } from '@/lib/openaiService'
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +22,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const prescricaoData: PrescricaoData = await openaiService.gerarPrescricao(transcricao)
+    const service = new OpenAIService()
+    const prescricaoData: PrescricaoData = await service.gerarPrescricao(transcricao)
 
     return NextResponse.json(prescricaoData, { status: 200 })
 

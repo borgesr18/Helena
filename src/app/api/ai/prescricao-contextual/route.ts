@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserContext, hasPermission } from '@/lib/rbac';
-import { openaiService } from '@/lib/openaiService';
+import { OpenAIService } from '@/lib/openaiService';
 import { drugInteractionService } from '@/lib/drugInteractionService';
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +21,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const prescricaoData = await openaiService.gerarPrescricaoComContexto(
+    const service = new OpenAIService();
+    const prescricaoData = await service.gerarPrescricaoComContexto(
       transcricao,
       pacienteNome,
       userContext.userId

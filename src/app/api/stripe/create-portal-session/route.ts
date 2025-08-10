@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUserServer } from '@/lib/auth-server';
 
 function getStripe(): Stripe {
   if (!process.env.STRIPE_SECRET_KEY) {
     throw new Error('STRIPE_SECRET_KEY is not configured');
   }
-  return new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: '2025-07-30.basil',
-  });
+  return new Stripe(process.env.STRIPE_SECRET_KEY);
 }
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Stripe não configurado' }, { status: 503 });
     }
 
-    const user = await getCurrentUser();
+    const user = await getCurrentUserServer();
     if (!user) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }

@@ -120,13 +120,24 @@ export class NotificationService {
       }
     });
 
+    type ConsultaIncluida = {
+      paciente: {
+        email?: string | null;
+        telefone?: string | null;
+        nome: string;
+      }
+    }
+
     for (const notif of notificacoesPendentes) {
+      const consulta = notif.consulta as unknown as ConsultaIncluida;
+      const destinatario = consulta.paciente.email || consulta.paciente.telefone || '';
+
       const sucesso = await this.enviarNotificacao({
         userId: notif.user_id,
         tipo: notif.tipo as 'lembrete' | 'confirmacao' | 'cancelamento',
         canal: notif.canal as 'email' | 'sms' | 'push' | 'in_app',
         conteudo: notif.conteudo,
-        destinatario: notif.consulta.paciente.nome // Simplificado
+        destinatario
       });
 
       await prisma.notificacaoConsulta.update({
